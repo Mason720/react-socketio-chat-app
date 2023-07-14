@@ -1,3 +1,4 @@
+// Your existing code
 const express = require("express");
 const app = express();
 const http = require("http");
@@ -14,12 +15,24 @@ const io = new Server(server, {
   },
 });
 
+let waitingRoom = null;  // The new waiting room variable
+
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  socket.on("join_room", (data) => {
-    socket.join(data);
-    console.log(`User with ID: ${socket.id} joined room: ${data}`);
+  socket.on("join_request", () => {
+    if (waitingRoom) {
+      socket.join(waitingRoom);
+      console.log(`User with ID: ${socket.id} joined room: ${waitingRoom}`);
+      socket.to(waitingRoom).emit('room_joined', waitingRoom);
+      socket.emit('room_joined', waitingRoom);
+      waitingRoom = null;
+    } else {
+      const roomID = Math.random().toString(36).substring(2, 15);
+      socket.join(roomID);
+      console.log(`User with ID: ${socket.id} created room: ${roomID}`);
+      waitingRoom = roomID;
+    }
   });
 
   socket.on("send_message", (data) => {
